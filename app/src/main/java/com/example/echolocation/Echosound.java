@@ -13,6 +13,8 @@ import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.TextView;
 import android.graphics.Rect;
+import android.util.Log;
+import android.content.Intent;
 
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AlertDialog;
@@ -32,9 +34,10 @@ public class Echosound extends AppCompatActivity implements SensorEventListener 
     private static final int REQUEST_AUDIO_PERMISSION_CODE = 1;
     private static final float MOVEMENT_FACTOR = 5f; // Sensitivity for dolphin movement
     private static final int SAMPLE_RATE = 44100;
+    private static final int INITIAL_VISIBLE_TIME = 5000;
 
     // UI Elements
-    private TextView soundLevelTextView, timerTextView, micStatusTextView, scoreTextView;
+    private TextView soundLevelTextView, timerTextView, micStatusTextView;
     private Button toggleButton;
     private ImageView dolphinImageView, orcaImageView;
     private ImageView[] coralImages;
@@ -57,6 +60,7 @@ public class Echosound extends AppCompatActivity implements SensorEventListener 
     private int timerCount;
     private boolean isRecording = false;
     private boolean isGameOver = false;
+    private boolean coralsVisibile = true;
     private int score = 0;
     private boolean isImmune = true; // Immunity period
     private Rect dolphinRect = new Rect();
@@ -94,6 +98,7 @@ public class Echosound extends AppCompatActivity implements SensorEventListener 
         dolphinY = dolphinImageView.getY();
 
         startOrcaMovement();
+        handler.postDelayed(() -> coralsVisibile = false, INITIAL_VISIBLE_TIME);
         // Enable immunity for the first 2 seconds
         enableImmunityPeriod();
     }
@@ -151,11 +156,6 @@ public class Echosound extends AppCompatActivity implements SensorEventListener 
         handler.postDelayed(() -> isImmune = false, 2000); // Disable immunity after 2 seconds
     }
 
-    private void updateScore(int newScore) {
-        score = newScore;
-        runOnUiThread(() -> scoreTextView.setText("Score: " + score));
-    }
-
     // Screen setup
     private void setupScreenDimensions() {
         Display display = getWindowManager().getDefaultDisplay();
@@ -172,14 +172,14 @@ public class Echosound extends AppCompatActivity implements SensorEventListener 
         micStatusTextView = findViewById(R.id.micStatusTextView);
         toggleButton = findViewById(R.id.toggleButton);
         dolphinImageView = findViewById(R.id.imageView3);
-        orcaImageView = findViewById(R.id.orcaImageView);
-        scoreTextView = findViewById(R.id.scoreTextView);
+        orcaImageView = findViewById(R.id.imageView2);
 
         coralImages = new ImageView[]{
                 findViewById(R.id.imageView5),
                 findViewById(R.id.imageView6),
                 findViewById(R.id.imageView7)
         };
+        setCoralsVisible();
     }
 
     // Request microphone permission
@@ -230,11 +230,9 @@ public class Echosound extends AppCompatActivity implements SensorEventListener 
             if (isRecording) {
                 stopRecording();
                 micStatusTextView.setText("Mic: OFF");
-                setCoralVisibility(false); // Make corals not visible
             } else {
                 startRecording();
                 micStatusTextView.setText("Mic: ON");
-                setCoralVisibility(true); // Make corals visible
             }
         }
     }
@@ -258,7 +256,10 @@ public class Echosound extends AppCompatActivity implements SensorEventListener 
                 double dB = 10 * Math.log10(amplitude);
 
                 soundLevelTextView.setText("Sound Level: " + Math.round(dB) + " dB");
-                adjustCoralOpacity((float) Math.max(0, Math.round(dB)));
+
+                if(!coralsVisibile){
+                    adjustCoralOpacity((float) Math.max(0, Math.round(dB)));
+                }
             }
             handler.postDelayed(this::updateSoundLevel, 1000);
         }
@@ -280,19 +281,31 @@ public class Echosound extends AppCompatActivity implements SensorEventListener 
             audioRecord = null;
 
             // Make corals not visible or set low opacity
-            setCoralVisibility(false); // Set to invisible when recording stops
+            setCoralsInvisible();// Set to invisible when recording stops
+        }
+    }
+
+    private void setCoralsInvisible() {
+        for (ImageView coral : coralImages) {
+            coral.setImageAlpha(0); // Fully transparent
+        }
+    }
+
+    private void setCoralsVisible() {
+        for (ImageView coral : coralImages) {
+            coral.setImageAlpha(255); // Fully visible
         }
     }
 
     private boolean checkPermission() {
-        return ContextCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED;
+        return ContextCompat.checkSelfPermission(getApplicationContext(), Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED;
     }
 
     @Override
     public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults);
         if (requestCode == REQUEST_AUDIO_PERMISSION_CODE) {
-            if (grantResults.length == 0 || grantResults[0] != PackageManager.PERMISSION_GRANTED) {
+            if (!(grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED)) {
                 finish();
             }
         }
@@ -360,24 +373,20 @@ public class Echosound extends AppCompatActivity implements SensorEventListener 
     }
 
     private void showGameOverDialog() {
-        runOnUiThread(() -> {
-            new AlertDialog.Builder(Echosound.this)
-                    .setTitle("Game Over")
-                    .setMessage("Your score: " + score + "\nTime survived: " + timerCount + " seconds")
-                    .setPositiveButton("Play Again", (dialog, which) -> resetGame())
-                    .setNegativeButton("Exit", (dialog, which) -> finish())
-                    .setCancelable(false)
-                    .show();
-        });
+            // Create an Intent to start the GameOver activity
+            Intent intent = new Intent(Echosound.this, GameOVER.class);
+            // Pass the timerCount value to the GameOver activity
+            intent.putExtra("TIMER_COUNT", timerCount);
+
+            // Start the GameOver activity
+            startActivity(intent);
     }
 
     private void resetGame() {
-        score = 0;
         timerCount = 0;
         isGameOver = false;
         isImmune = true;
         enableImmunityPeriod();
-        updateScore(score);
 
         dolphinX = screenWidth / 2f - dolphinImageView.getWidth() / 2f;
         dolphinY = screenHeight / 2f - dolphinImageView.getHeight() / 2f;
@@ -393,8 +402,8 @@ public class Echosound extends AppCompatActivity implements SensorEventListener 
 
     private void moveCorals() {
         for (ImageView coral : coralImages) {
-            float randomX = random.nextFloat() * (screenWidth - coral.getWidth());
-            float randomY = random.nextFloat() * (screenHeight - coral.getHeight());
+            float randomX = random.nextInt(screenWidth - coral.getWidth());
+            float randomY = random.nextInt(screenHeight - coral.getHeight());
             coral.setX(randomX);
             coral.setY(randomY);
         }
@@ -403,11 +412,15 @@ public class Echosound extends AppCompatActivity implements SensorEventListener 
     @Override
     public void onSensorChanged(SensorEvent event) {
         if (event.sensor.getType() == Sensor.TYPE_ACCELEROMETER && !isGameOver) {
-            float deltaX = -event.values[0] * MOVEMENT_FACTOR;
-            float deltaY = event.values[1] * MOVEMENT_FACTOR;
+            float x = event.values[0];
+            float y = event.values[1];
+            dolphinX -= x * MOVEMENT_FACTOR;
+            dolphinY += y * MOVEMENT_FACTOR;
 
-            dolphinX = Math.max(0, Math.min(dolphinX + deltaX, screenWidth - dolphinImageView.getWidth()));
-            dolphinY = Math.max(0, Math.min(dolphinY + deltaY, screenHeight - dolphinImageView.getHeight()));
+            if (dolphinX < 0) dolphinX = 0;
+            if (dolphinX > screenWidth - dolphinImageView.getWidth()) dolphinX = screenWidth - dolphinImageView.getWidth();
+            if (dolphinY < 0) dolphinY = 0;
+            if (dolphinY > screenHeight - dolphinImageView.getHeight()) dolphinY = screenHeight - dolphinImageView.getHeight();
 
             dolphinImageView.setX(dolphinX);
             dolphinImageView.setY(dolphinY);
@@ -417,9 +430,7 @@ public class Echosound extends AppCompatActivity implements SensorEventListener 
     }
 
     @Override
-    public void onAccuracyChanged(Sensor sensor, int accuracy) {
-        // Not used
-    }
+    public void onAccuracyChanged(Sensor sensor, int accuracy) {}
 
     @Override
     protected void onResume() {
