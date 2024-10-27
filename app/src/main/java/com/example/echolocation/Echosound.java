@@ -14,7 +14,6 @@ import android.widget.ImageView;
 import android.widget.TextView;
 import android.graphics.Rect;
 import android.util.Log;
-import android.content.Intent;
 
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AlertDialog;
@@ -313,13 +312,13 @@ public class Echosound extends AppCompatActivity implements SensorEventListener 
 
     private void adjustCoralOpacity(float dB) {
         int alpha;
-        if (dB < 55) {
+        if (dB < 45) {
             alpha = 0;
-        } else if (dB < 65) {
+        } else if (dB < 55) {
             alpha = 100;
-        } else if (dB < 75) {
+        } else if (dB < 65) {
             alpha = 150;
-        } else if (dB < 85) {
+        } else if (dB < 75) {
             alpha = 200;
         } else {
             alpha = 250;
@@ -373,13 +372,15 @@ public class Echosound extends AppCompatActivity implements SensorEventListener 
     }
 
     private void showGameOverDialog() {
-            // Create an Intent to start the GameOver activity
-            Intent intent = new Intent(Echosound.this, GameOVER.class);
-            // Pass the timerCount value to the GameOver activity
-            intent.putExtra("TIMER_COUNT", timerCount);
-
-            // Start the GameOver activity
-            startActivity(intent);
+        runOnUiThread(() -> {
+            new AlertDialog.Builder(Echosound.this)
+                    .setTitle("Game Over")
+                    .setMessage("Your score: " + (timerCount*5) + "\nTime survived: " + timerCount + " seconds")
+                    .setPositiveButton("Play Again", (dialog, which) -> resetGame())
+                    .setNegativeButton("Exit", (dialog, which) -> finish())
+                    .setCancelable(false)
+                    .show();
+        });
     }
 
     private void resetGame() {
