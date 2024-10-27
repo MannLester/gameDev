@@ -12,8 +12,8 @@
         android:id="@+id/soundLevelTextView"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginStart="92dp"
-        android:layout_marginBottom="100dp"
+        android:layout_marginStart="124dp"
+        android:layout_marginBottom="28dp"
         android:text="Sound Level: 0 dB"
         android:textColor="@android:color/holo_purple"
         android:textSize="24sp"
@@ -60,22 +60,22 @@
 
     <ImageView
         android:id="@+id/imageView3"
-        android:layout_width="261dp"
-        android:layout_height="272dp"
-        android:layout_marginStart="52dp"
+        android:layout_width="29dp"
+        android:layout_height="63dp"
+        android:layout_marginStart="184dp"
         android:src="@drawable/dolphin2"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintVertical_bias="0.81"/>
+        app:layout_constraintVertical_bias="0.886" />
 
     <ImageView
         android:id="@+id/imageView5"
         android:layout_width="53dp"
         android:layout_height="53dp"
-        android:layout_marginTop="108dp"
+        android:layout_marginTop="60dp"
 
-        android:layout_marginEnd="188dp"
+        android:layout_marginEnd="336dp"
         android:src="@drawable/corals1"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
@@ -84,8 +84,8 @@
         android:id="@+id/imageView6"
         android:layout_width="58dp"
         android:layout_height="132dp"
-        android:layout_marginTop="108dp"
-        android:layout_marginEnd="68dp"
+        android:layout_marginTop="16dp"
+        android:layout_marginEnd="40dp"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintTop_toTopOf="parent"
         app:srcCompat="@drawable/corals2" />
@@ -94,13 +94,21 @@
         android:id="@+id/imageView7"
         android:layout_width="66dp"
         android:layout_height="158dp"
-        android:layout_marginTop="264dp"
-        android:layout_marginEnd="16dp"
+        android:layout_marginTop="304dp"
+        android:layout_marginEnd="4dp"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintTop_toTopOf="parent"
         app:srcCompat="@drawable/corals3" />
-</androidx.constraintlayout.widget.ConstraintLayout>
 
+    <TextView
+        android:id="@+id/scoreTextView"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Score: 0"
+        android:textSize="18sp"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
+</androidx.constraintlayout.widget.ConstraintLayout>
 
 
 
