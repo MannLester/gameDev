@@ -36,7 +36,7 @@ public class Echosound extends AppCompatActivity implements SensorEventListener 
     // UI Elements
     private TextView soundLevelTextView, timerTextView, micStatusTextView, scoreTextView;
     private Button toggleButton;
-    private ImageView dolphinImageView;
+    private ImageView dolphinImageView, orcaImageView;
     private ImageView[] coralImages;
 
     // Audio and Sensor Management
@@ -61,6 +61,7 @@ public class Echosound extends AppCompatActivity implements SensorEventListener 
     private boolean isImmune = true; // Immunity period
     private Rect dolphinRect = new Rect();
     private Rect coralRect = new Rect();
+    private Rect orcaRect = new Rect();
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -92,8 +93,57 @@ public class Echosound extends AppCompatActivity implements SensorEventListener 
         dolphinX = dolphinImageView.getX();
         dolphinY = dolphinImageView.getY();
 
+        startOrcaMovement();
         // Enable immunity for the first 2 seconds
         enableImmunityPeriod();
+    }
+
+    private void startOrcaMovement(){
+        handler.postDelayed(new Runnable() {
+            @Override
+            public void run() {
+                if(!isGameOver){
+                    float baseSpeed = 3f; // Base speed for orca
+                    float speedMultiplier = 1 + (timerCount / 20f);
+                    float deltaX = dolphinX - orcaImageView.getX();
+                    float deltaY = dolphinY - orcaImageView.getY();
+
+                    float distance = (float) Math.sqrt(deltaX * deltaX + deltaY * deltaY);
+                    float moveX = (deltaX / distance) * 3f; // Adjust speed here
+                    float moveY = (deltaY / distance) * 3f;
+
+                    // Update orca's position
+                    orcaImageView.setX(orcaImageView.getX() + moveX);
+                    orcaImageView.setY(orcaImageView.getY() + moveY);
+
+                    // Check for collision between orca and dolphin
+                    checkOrcaCollision();
+
+                    // Repeat movement every 50 ms
+                    handler.postDelayed(this, 50);
+                }
+            }
+        }, 50);
+    }
+
+    private void checkOrcaCollision() {
+        if (isGameOver) return;
+
+        // Define the boundaries of the orca and dolphin for collision
+        orcaRect.left = (int) orcaImageView.getX();
+        orcaRect.top = (int) orcaImageView.getY();
+        orcaRect.right = (int) orcaImageView.getX() + orcaImageView.getWidth() - 20;
+        orcaRect.bottom = (int) orcaImageView.getY() + orcaImageView.getHeight() - 20;
+
+        dolphinRect.left = (int) dolphinX;
+        dolphinRect.top = (int) dolphinY;
+        dolphinRect.right = (int) dolphinX + dolphinImageView.getWidth()-10;
+        dolphinRect.bottom = (int) dolphinY + dolphinImageView.getHeight()-10;
+
+        // Trigger game over if orca intersects with dolphin
+        if (Rect.intersects(dolphinRect, orcaRect)) {
+            showGameOverDialog();
+        }
     }
 
     private void enableImmunityPeriod() {
@@ -122,6 +172,7 @@ public class Echosound extends AppCompatActivity implements SensorEventListener 
         micStatusTextView = findViewById(R.id.micStatusTextView);
         toggleButton = findViewById(R.id.toggleButton);
         dolphinImageView = findViewById(R.id.imageView3);
+        orcaImageView = findViewById(R.id.orcaImageView);
         scoreTextView = findViewById(R.id.scoreTextView);
 
         coralImages = new ImageView[]{
@@ -280,7 +331,7 @@ public class Echosound extends AppCompatActivity implements SensorEventListener 
                 moveCorals();
                 handler.postDelayed(this, 5000);
             }
-        }, 800);
+        }, 8000);
     }
 
     private void checkCollision() {
@@ -288,15 +339,15 @@ public class Echosound extends AppCompatActivity implements SensorEventListener 
 
         dolphinRect.left = (int) dolphinX;
         dolphinRect.top = (int) dolphinY;
-        dolphinRect.right = (int) dolphinX + dolphinImageView.getWidth();
-        dolphinRect.bottom = (int) dolphinY + dolphinImageView.getHeight();
+        dolphinRect.right = (int) dolphinX + dolphinImageView.getWidth() - 10;
+        dolphinRect.bottom = (int) dolphinY + dolphinImageView.getHeight() - 10;
 
         for (ImageView coral : coralImages) {
             if (coral.getImageAlpha() > 0) {
-                coralRect.left =                 (int) coral.getX();
+                coralRect.left = (int) coral.getX();
                 coralRect.top = (int) coral.getY();
-                coralRect.right = (int) coral.getX() + coral.getWidth();
-                coralRect.bottom = (int) coral.getY() + coral.getHeight();
+                coralRect.right = (int) coral.getX() + coral.getWidth() - 20;
+                coralRect.bottom = (int) coral.getY() + coral.getHeight() - 20;
 
                 if (Rect.intersects(dolphinRect, coralRect)) {
                     // Game over scenario
@@ -325,13 +376,19 @@ public class Echosound extends AppCompatActivity implements SensorEventListener 
         timerCount = 0;
         isGameOver = false;
         isImmune = true;
-        enableImmunityPeriod(); // Re-enable immunity period
+        enableImmunityPeriod();
         updateScore(score);
 
         dolphinX = screenWidth / 2f - dolphinImageView.getWidth() / 2f;
         dolphinY = screenHeight / 2f - dolphinImageView.getHeight() / 2f;
         dolphinImageView.setX(dolphinX);
         dolphinImageView.setY(dolphinY);
+
+        orcaImageView.setX(0); // Reset orca's position if desired
+        orcaImageView.setY(0);
+
+        // Restart orca movement
+        startOrcaMovement();
     }
 
     private void moveCorals() {
